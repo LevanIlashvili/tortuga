@@ -1,0 +1,36 @@
+{
+  "name": "tortuga-hedera",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Real estate bond tokenization platform on Hedera Mainnet",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "clean": "turbo run clean",
+    "db:generate": "cd packages/database && prisma generate",
+    "db:migrate": "cd packages/database && prisma migrate dev",
+    "db:push": "cd packages/database && prisma db push",
+    "db:seed": "tsx scripts/seed-db.ts",
+    "hedera:setup": "tsx scripts/setup-hedera.ts",
+    "hedera:test": "tsx scripts/test-hedera.ts",
+    "hedera:monitor": "tsx scripts/monitor-payments.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "turbo": "^2.0.0",
+    "typescript": "^5.5.0",
+    "tsx": "^4.16.0",
+    "prettier": "^3.3.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.5.0"
+}
