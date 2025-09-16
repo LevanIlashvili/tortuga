@@ -1,0 +1,310 @@
+// Tortuga Hedera - Database Schema
+// Real Estate Tokenization Platform
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+enum UserRole {
+  ADMIN
+  INVESTOR
+}
+
+enum KycStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAYMENT_RECEIVED
+  TOKENS_MINTED
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  CONFIRMED
+  FAILED
+}
+
+enum PropertyStatus {
+  DRAFT
+  ACTIVE
+  SOLD_OUT
+  CLOSED
+}
+
+enum ComplianceEventType {
+  USER_REGISTERED
+  KYC_SUBMITTED
+  KYC_APPROVED
+  KYC_REJECTED
+  PROPERTY_CREATED
+  TOKEN_DEPLOYED
+  ORDER_CREATED
+  PAYMENT_RECEIVED
+  TOKENS_MINTED
+  KYC_GRANTED
+  TRANSFER_ATTEMPTED
+}
+
+// ============================================================================
+// MODELS
+// ============================================================================
+
+model User {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // User Info
+  email     String   @unique
+  role      UserRole @default(INVESTOR)
+  isActive  Boolean  @default(true)
+
+  // Relations
+  wallets        Wallet[]
+  kycApplication KycApplication?
+  orders         Order[]
+  balances       UserPropertyBalance[]
+
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+model Wallet {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Hedera Account
+  accountId String  @unique // 0.0.XXXXX format
+  publicKey String?
+
+  // Relations
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([accountId])
+  @@map("wallets")
+}
+
+model KycApplication {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Application Data
+  status       KycStatus @default(PENDING)
+  fullName     String
+  dateOfBirth  DateTime
+  nationality  String
+  address      String
+  city         String
+  postalCode   String
+  country      String
+
+  // Documents (S3 URLs or local paths)
+  idDocumentUrl      String
+  proofOfAddressUrl  String
+  selfieUrl          String?
+
+  // Review
+  reviewedAt     DateTime?
+  reviewedBy     String? // Admin user ID
+  rejectionNote  String?
+
+  // Relations
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([userId])
+  @@map("kyc_applications")
+}
+
+model Property {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Property Info
+  name        String
+  description String
+  location    String
+  imageUrl    String?
+
+  // Financial Details
+  totalValue       Decimal // Total property value in USD
+  bondYield        Decimal // Annual yield percentage (e.g., 8.5 = 8.5%)
+  maturityDate     DateTime
+  minimumInvestment Decimal // Minimum investment amount in USD
+
+  // Token Details
+  tokenSupply      Int     // Total number of tokens to mint
+  tokenPrice       Decimal // Price per token in USD
+  tokensSold       Int     @default(0)
+
+  // Status
+  status PropertyStatus @default(DRAFT)
+
+  // Relations
+  hederaToken HederaToken?
+  orders      Order[]
+  balances    UserPropertyBalance[]
+
+  @@index([status])
+  @@map("properties")
+}
+
+model HederaToken {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Hedera Token Service Info
+  tokenId     String  @unique // 0.0.YYYYY format
+  tokenName   String
+  tokenSymbol String
+  decimals    Int     @default(0)
+  totalSupply Int
+
+  // Management Keys (stored as hex strings or key references)
+  adminKeyId  String?
+  supplyKeyId String?
+  kycKeyId    String?
+  freezeKeyId String?
+  wipeKeyId   String?
+
+  // Relations
+  propertyId String   @unique
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([tokenId])
+  @@index([propertyId])
+  @@map("hedera_tokens")
+}
+
+model Order {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Order Details
+  orderNumber    String      @unique // e.g., "ORDER-abc123xyz"
+  status         OrderStatus @default(PENDING_PAYMENT)
+  tokenQuantity  Int // Number of tokens to purchase
+  tokenPrice     Decimal // Price per token at time of purchase
+  totalAmount    Decimal // Total amount in USD
+  usdcAmount     Decimal // Amount in USDC (for payment)
+
+  // Memo for Treasury + Memo Pattern
+  paymentMemo String @unique // e.g., "ORDER:abc123xyz"
+
+  // Completion
+  completedAt       DateTime?
+  hederaTokenMintTx String? // Transaction ID of token mint
+  failureReason     String?
+
+  // Relations
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  propertyId String
+  property   Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  payment    Payment?
+
+  @@index([userId])
+  @@index([propertyId])
+  @@index([status])
+  @@index([orderNumber])
+  @@index([paymentMemo])
+  @@map("orders")
+}
+
+model Payment {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Payment Details
+  status            PaymentStatus @default(PENDING)
+  amount            Decimal // Amount paid
+  currency          String        @default("USDC")
+
+  // Hedera Transaction Details
+  hederaTransactionId String  @unique // e.g., "0.0.12345@1234567890.123456789"
+  hederaTreasuryId    String // Treasury account that received payment
+  hederaMemo          String // Memo from transaction
+  confirmedAt         DateTime?
+
+  // Relations
+  orderId String @unique
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([hederaTransactionId])
+  @@index([hederaMemo])
+  @@map("payments")
+}
+
+model UserPropertyBalance {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Balance Info
+  tokenBalance Int @default(0) // Current token balance for this property
+
+  // Relations
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, propertyId])
+  @@index([userId])
+  @@index([propertyId])
+  @@map("user_property_balances")
+}
+
+model ComplianceLogCache {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  // Compliance Event
+  eventType ComplianceEventType
+  eventData Json // Flexible JSON data for event details
+  actor     String // User ID or system identifier
+
+  // HCS Reference
+  hcsTopicId       String // HCS Topic ID where event was logged
+  hcsSequenceNum   String? // Sequence number in HCS topic
+  hcsConsensusTime DateTime? // Consensus timestamp from HCS
+
+  // Relations
+  userId     String?
+  propertyId String?
+  orderId    String?
+
+  @@index([eventType])
+  @@index([userId])
+  @@index([propertyId])
+  @@index([hcsTopicId, hcsSequenceNum])
+  @@map("compliance_log_cache")
+}
