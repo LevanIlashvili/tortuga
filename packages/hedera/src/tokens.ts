@@ -3,6 +3,7 @@ import {
   TokenInfoQuery,
   TokenMintTransaction,
   TokenAssociateTransaction,
+  TransferTransaction,
   TokenType,
   TokenSupplyType,
   AccountId,
@@ -101,4 +102,40 @@ export async function associateToken(
   await txResponse.getReceipt(client);
 
   return txResponse.transactionId.toString();
+}
+
+export async function mintTokensToInvestor(
+  tokenId: string,
+  investorAccountId: string,
+  amount: number,
+  treasuryAccountId: string,
+  supplyKey?: PrivateKey,
+  treasuryKey?: PrivateKey
+): Promise<{ mintTxId: string; transferTxId: string }> {
+  const client = getClient();
+  const supply = supplyKey || getPrivateKey('HEDERA_SUPPLY_KEY');
+  const treasury = treasuryKey || getPrivateKey('HEDERA_OPERATOR_KEY');
+
+  const mintTx = new TokenMintTransaction()
+    .setTokenId(tokenId)
+    .setAmount(amount)
+    .freezeWith(client);
+
+  const signedMintTx = await mintTx.sign(supply);
+  const mintResponse = await signedMintTx.execute(client);
+  await mintResponse.getReceipt(client);
+
+  const transferTx = new TransferTransaction()
+    .addTokenTransfer(tokenId, AccountId.fromString(treasuryAccountId), -amount)
+    .addTokenTransfer(tokenId, AccountId.fromString(investorAccountId), amount)
+    .freezeWith(client);
+
+  const signedTransferTx = await transferTx.sign(treasury);
+  const transferResponse = await signedTransferTx.execute(client);
+  await transferResponse.getReceipt(client);
+
+  return {
+    mintTxId: mintResponse.transactionId.toString(),
+    transferTxId: transferResponse.transactionId.toString(),
+  };
 }
