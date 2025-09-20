@@ -4,3 +4,4 @@ export * from './constants';
 export * from './tokens';
 export * from './kyc';
 export * from './compliance';
+export * from './mirror';
