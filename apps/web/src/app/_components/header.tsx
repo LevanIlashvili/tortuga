@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { Menu, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { HashPackConnector } from './hashpack-connector';
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -50,7 +50,7 @@ export function Header() {
         </div>
 
         <div className="hidden lg:flex lg:flex-1 lg:justify-end">
-          <Button>Connect Wallet</Button>
+          <HashPackConnector />
         </div>
       </nav>
 
@@ -97,7 +97,7 @@ export function Header() {
                   </Link>
                 </div>
                 <div className="py-6">
-                  <Button className="w-full">Connect Wallet</Button>
+                  <HashPackConnector />
                 </div>
               </div>
             </div>
