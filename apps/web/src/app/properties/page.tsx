@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { PropertyCard } from '../_components/property-card';
 import { Filters } from './_components/filters';
+import { Building2 } from 'lucide-react';
 
 interface Property {
   id: string;
@@ -49,10 +50,12 @@ export default function PropertiesPage() {
   };
 
   const locations = useMemo(() => {
+    if (!properties || properties.length === 0) return [];
     return Array.from(new Set(properties.map((p) => p.location))).sort();
   }, [properties]);
 
   const filteredProperties = useMemo(() => {
+    if (!properties || properties.length === 0) return [];
     return properties.filter((property) => {
       if (searchQuery && !property.name.toLowerCase().includes(searchQuery.toLowerCase()) && !property.location.toLowerCase().includes(searchQuery.toLowerCase())) {
         return false;
@@ -109,7 +112,7 @@ export default function PropertiesPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Explore Properties</h1>
           <p className="mt-2 text-gray-600">
-            Browse {properties.length} available real estate investment opportunities
+            Browse {properties?.length || 0} available real estate investment opportunities
           </p>
         </div>
 
@@ -124,11 +127,19 @@ export default function PropertiesPage() {
         />
 
         {filteredProperties.length === 0 ? (
-          <div className="text-center py-12">
+          <div className="flex flex-col items-center justify-center py-16">
+            <div className="rounded-full bg-gray-100 p-8 mb-6">
+              <Building2 className="h-16 w-16 text-gray-400" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              {!properties || properties.length === 0
+                ? 'No Properties Available'
+                : 'No Matching Properties'}
+            </h3>
             <p className="text-gray-600">
-              {properties.length === 0
-                ? 'No properties available at the moment.'
-                : 'No properties match your filters.'}
+              {!properties || properties.length === 0
+                ? 'Properties will appear here once they are listed.'
+                : 'Try adjusting your filters to see more results.'}
             </p>
           </div>
         ) : (

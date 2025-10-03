@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { MapPin, TrendingUp, Clock, Building2 } from 'lucide-react';
+import { ImageGallery } from './_components/image-gallery';
 
 interface Property {
   id: string;
@@ -88,7 +88,6 @@ export default function PropertyDetailPage() {
     );
   }
 
-  const primaryImage = property.images.find((img) => img.isPrimary)?.url || property.images[0]?.url || '/placeholder-property.jpg';
   const availabilityPercent = (property.availableTokens / property.totalTokens) * 100;
 
   return (
@@ -96,12 +95,7 @@ export default function PropertyDetailPage() {
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
           <div className="lg:col-span-2">
-            <div className="relative h-96 w-full overflow-hidden rounded-lg">
-              <Image src={primaryImage} alt={property.name} fill className="object-cover" />
-              {availabilityPercent < 20 && (
-                <Badge className="absolute top-4 right-4 bg-red-500">Almost Sold Out</Badge>
-              )}
-            </div>
+            <ImageGallery images={property.images} propertyName={property.name} />
 
             <div className="mt-8">
               <h1 className="text-3xl font-bold text-gray-900">{property.name}</h1>
