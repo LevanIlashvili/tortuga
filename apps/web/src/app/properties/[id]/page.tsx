@@ -1,12 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { MapPin, TrendingUp, Clock, Building2 } from 'lucide-react';
 import { ImageGallery } from './_components/image-gallery';
+import { PurchaseModal } from './_components/purchase-modal';
+import { useAuth } from '@/app/_components/auth-provider';
 
 interface Property {
   id: string;
@@ -29,9 +31,12 @@ interface Property {
 
 export default function PropertyDetailPage() {
   const params = useParams();
+  const router = useRouter();
+  const { user, connect } = useAuth();
   const [property, setProperty] = useState<Property | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [purchaseModalOpen, setPurchaseModalOpen] = useState(false);
 
   useEffect(() => {
     if (params.id) {
@@ -158,9 +163,27 @@ export default function PropertyDetailPage() {
                     <div className="text-sm text-gray-600">Minimum Investment</div>
                     <div className="mt-1 text-3xl font-bold text-gray-900">${property.tokenPrice}</div>
                   </div>
-                  <Button className="w-full" size="lg">
-                    Invest Now
-                  </Button>
+                  {!user ? (
+                    <Button className="w-full" size="lg" onClick={connect}>
+                      Connect Wallet
+                    </Button>
+                  ) : user.kycStatus === 'PENDING' ? (
+                    <Button className="w-full" size="lg" disabled>
+                      KYC Under Review
+                    </Button>
+                  ) : user.kycStatus === 'REJECTED' ? (
+                    <Button className="w-full" size="lg" onClick={() => router.push('/kyc')}>
+                      Complete KYC
+                    </Button>
+                  ) : user.kycStatus !== 'APPROVED' ? (
+                    <Button className="w-full" size="lg" onClick={() => router.push('/kyc')}>
+                      Complete KYC
+                    </Button>
+                  ) : (
+                    <Button className="w-full" size="lg" onClick={() => setPurchaseModalOpen(true)}>
+                      Invest Now
+                    </Button>
+                  )}
                   {property.hederaToken && (
                     <div className="rounded-lg bg-gray-50 p-4">
                       <div className="text-xs text-gray-600">Token ID</div>
@@ -173,6 +196,19 @@ export default function PropertyDetailPage() {
           </div>
         </div>
       </div>
+
+      {property && (
+        <PurchaseModal
+          open={purchaseModalOpen}
+          onOpenChange={setPurchaseModalOpen}
+          property={{
+            id: property.id,
+            name: property.name,
+            tokenPrice: property.tokenPrice,
+            availableTokens: property.availableTokens,
+          }}
+        />
+      )}
     </div>
   );
 }
