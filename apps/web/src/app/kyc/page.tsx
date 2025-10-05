@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { CheckCircle2, Clock, XCircle } from 'lucide-react';
 import { useAuth } from '@/app/_components/auth-provider';
 import { Step1PersonalInfo, PersonalInfoFormData } from './_components/step1-personal-info';
+import { Step2DocumentUpload, DocumentUploadFormData } from './_components/step2-document-upload';
 
 export default function KYCPage() {
   const router = useRouter();
@@ -40,6 +41,39 @@ export default function KYCPage() {
       console.error('Failed to check KYC status:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleKycSubmit = async (documentData: DocumentUploadFormData, file: File) => {
+    if (!formData.personalInfo) {
+      throw new Error('Personal information is missing');
+    }
+
+    const submitFormData = new FormData();
+    submitFormData.append('fullName', formData.personalInfo.fullName);
+    submitFormData.append('dateOfBirth', formData.personalInfo.dateOfBirth);
+    submitFormData.append('phoneNumber', formData.personalInfo.phoneNumber);
+    submitFormData.append('address', formData.personalInfo.address);
+    submitFormData.append('city', formData.personalInfo.city);
+    submitFormData.append('postalCode', formData.personalInfo.postalCode);
+    submitFormData.append('country', formData.personalInfo.country);
+    submitFormData.append('documentType', documentData.documentType);
+    submitFormData.append('documentNumber', documentData.documentNumber);
+    submitFormData.append('document', file);
+
+    const response = await fetch('/api/kyc/submit', {
+      method: 'POST',
+      body: submitFormData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to submit KYC application');
+    }
+
+    const data = await response.json();
+    if (data.success) {
+      setExistingKyc(data.application);
     }
   };
 
@@ -184,8 +218,12 @@ export default function KYCPage() {
                 }}
               />
             )}
-            {currentStep === 2 && (
-              <div className="py-4" />
+            {currentStep === 2 && formData.personalInfo && (
+              <Step2DocumentUpload
+                personalInfo={formData.personalInfo}
+                onBack={() => setCurrentStep(1)}
+                onSubmit={handleKycSubmit}
+              />
             )}
           </CardContent>
         </Card>
