@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle2, Clock, XCircle } from 'lucide-react';
 import { useAuth } from '@/app/_components/auth-provider';
+import { Step1PersonalInfo, PersonalInfoFormData } from './_components/step1-personal-info';
 
 export default function KYCPage() {
   const router = useRouter();
@@ -13,6 +14,9 @@ export default function KYCPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(true);
   const [existingKyc, setExistingKyc] = useState<any>(null);
+  const [formData, setFormData] = useState<{
+    personalInfo?: PersonalInfoFormData;
+  }>({});
 
   useEffect(() => {
     if (!user) {
@@ -172,14 +176,16 @@ export default function KYCPage() {
           </CardHeader>
           <CardContent>
             {currentStep === 1 && (
-              <div className="text-center py-8 text-gray-500">
-                Personal Information Form (Coming in next commit)
-              </div>
+              <Step1PersonalInfo
+                initialData={formData.personalInfo}
+                onNext={(data) => {
+                  setFormData({ ...formData, personalInfo: data });
+                  setCurrentStep(2);
+                }}
+              />
             )}
             {currentStep === 2 && (
-              <div className="text-center py-8 text-gray-500">
-                Document Upload Form (Coming soon)
-              </div>
+              <div className="py-4" />
             )}
           </CardContent>
         </Card>
