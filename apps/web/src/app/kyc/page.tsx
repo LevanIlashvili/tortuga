@@ -8,6 +8,7 @@ import { CheckCircle2, Clock, XCircle } from 'lucide-react';
 import { useAuth } from '@/app/_components/auth-provider';
 import { Step1PersonalInfo, PersonalInfoFormData } from './_components/step1-personal-info';
 import { Step2DocumentUpload, DocumentUploadFormData } from './_components/step2-document-upload';
+import { StatusDisplay } from './_components/status-display';
 
 export default function KYCPage() {
   const router = useRouter();
@@ -92,62 +93,14 @@ export default function KYCPage() {
   }
 
   if (existingKyc) {
-    const getStatusDisplay = () => {
-      switch (existingKyc.status) {
-        case 'PENDING':
-          return {
-            icon: <Clock className="h-12 w-12 text-yellow-600" />,
-            title: 'KYC Under Review',
-            description: 'Your KYC application is being reviewed. You will be notified once the review is complete.',
-            badge: <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">Pending Review</Badge>,
-          };
-        case 'APPROVED':
-          return {
-            icon: <CheckCircle2 className="h-12 w-12 text-green-600" />,
-            title: 'KYC Approved',
-            description: 'Your identity has been verified. You can now invest in properties.',
-            badge: <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Approved</Badge>,
-          };
-        case 'REJECTED':
-          return {
-            icon: <XCircle className="h-12 w-12 text-red-600" />,
-            title: 'KYC Rejected',
-            description: existingKyc.rejectionReason || 'Your KYC application was rejected. Please contact support for more information.',
-            badge: <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">Rejected</Badge>,
-          };
-        default:
-          return {
-            icon: <Clock className="h-12 w-12 text-gray-600" />,
-            title: 'KYC Status Unknown',
-            description: 'Please contact support for assistance.',
-            badge: <Badge variant="outline">Unknown</Badge>,
-          };
-      }
-    };
-
-    const statusDisplay = getStatusDisplay();
-
     return (
       <div className="min-h-screen bg-gray-50 py-12">
         <div className="mx-auto max-w-3xl px-6">
-          <Card>
-            <CardContent className="pt-8">
-              <div className="flex flex-col items-center text-center">
-                <div className="mb-4">{statusDisplay.icon}</div>
-                <h1 className="text-2xl font-bold text-gray-900 mb-2">{statusDisplay.title}</h1>
-                <p className="text-gray-600 mb-4 max-w-md">{statusDisplay.description}</p>
-                {statusDisplay.badge}
-                {existingKyc.status === 'APPROVED' && (
-                  <button
-                    onClick={() => router.push('/properties')}
-                    className="mt-6 px-6 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
-                  >
-                    Browse Properties
-                  </button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">KYC Verification</h1>
+            <p className="mt-2 text-gray-600">Your identity verification status</p>
+          </div>
+          <StatusDisplay application={existingKyc} />
         </div>
       </div>
     );
