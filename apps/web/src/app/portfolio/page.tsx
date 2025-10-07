@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { TrendingUp, Wallet, Building2, Loader2 } from 'lucide-react';
 import { useAuth } from '@/app/_components/auth-provider';
+import { TransactionHistory } from './_components/transaction-history';
 
 interface PortfolioData {
   totalValue: number;
@@ -240,6 +241,10 @@ export default function PortfolioPage() {
             </div>
           </div>
         )}
+
+        <div className="mt-8">
+          <TransactionHistory />
+        </div>
       </div>
     </div>
   );
