@@ -10,7 +10,7 @@
     "clean": "rm -rf .next node_modules"
   },
   "dependencies": {
-    "@hashgraph/sdk": "^2.49.0",
+    "@hashgraph/sdk": "^2.76.0",
     "@hookform/resolvers": "^5.2.2",
     "@prisma/client": "^5.15.0",
     "@radix-ui/react-label": "^2.1.7",
@@ -18,6 +18,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
     "date-fns": "^3.6.0",
+    "hashconnect": "^3.0.14",
     "jose": "^5.2.0",
     "jsonwebtoken": "^9.0.0",
     "lucide-react": "^0.395.0",

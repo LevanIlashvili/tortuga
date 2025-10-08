@@ -22,7 +22,7 @@ interface PropertyToken {
 
 export default function WalletSetupPage() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, hashconnect } = useAuth();
   const [tokens, setTokens] = useState<PropertyToken[]>([]);
   const [loading, setLoading] = useState(true);
   const [associating, setAssociating] = useState(false);
@@ -61,26 +61,29 @@ export default function WalletSetupPage() {
       return;
     }
 
+    if (!user || !user.accountId) {
+      setError('Please connect your wallet first');
+      return;
+    }
+
     setAssociating(true);
     setError(null);
 
     try {
       const tokenIds = tokensToAssociate.map(t => t.tokenId);
 
-      // Step 1: Call HashPack to sign token association transaction
-      const hashpackResult = await associateTokens(tokenIds);
+      const result = await associateTokens(hashconnect, user.accountId, tokenIds);
 
-      if (!hashpackResult.success) {
-        throw new Error(hashpackResult.error || 'Failed to sign token association');
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to sign token association');
       }
 
-      // Step 2: Update association status in backend
       const response = await fetch('/api/wallet/associate-tokens', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           tokenIds,
-          transactionId: hashpackResult.transactionId,
+          transactionId: result.transactionId,
         }),
       });
 
@@ -91,7 +94,6 @@ export default function WalletSetupPage() {
 
       const data = await response.json();
       if (data.success) {
-        // Refresh token list to show updated association status
         await fetchTokens();
       }
     } catch (err: any) {

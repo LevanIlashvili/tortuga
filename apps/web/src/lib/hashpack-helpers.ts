@@ -1,53 +1,40 @@
-// HashPack helper functions for wallet integration
-// This is a mock implementation until real HashPack SDK is integrated
-
-export interface HashPackProvider {
-  pairingString: string;
-  accountId: string;
-  network: string;
-}
-
 export interface TransactionResponse {
   success: boolean;
   transactionId?: string;
   error?: string;
 }
 
-/**
- * Initialize HashPack wallet connection
- * Returns mock data for now - will be replaced with real HashPack SDK
- */
-export async function initHashPack(): Promise<HashPackProvider | null> {
-  // Mock implementation
-  // TODO: Replace with real HashPack initialization in future commit
-  return {
-    pairingString: 'mock-pairing-string',
-    accountId: '0.0.1234567',
-    network: 'testnet',
-  };
-}
+export async function associateTokens(
+  hashconnect: any,
+  accountId: string,
+  tokenIds: string[]
+): Promise<TransactionResponse> {
+  if (!hashconnect) {
+    return { success: false, error: 'HashConnect not initialized' };
+  }
 
-/**
- * Associate multiple tokens with the user's wallet
- * @param tokenIds - Array of token IDs to associate
- * @returns Transaction response
- */
-export async function associateTokens(tokenIds: string[]): Promise<TransactionResponse> {
   if (tokenIds.length === 0) {
     return { success: false, error: 'No tokens provided' };
   }
 
   try {
-    // Mock implementation - simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    const { TokenAssociateTransaction, AccountId, TokenId } = await import('@hashgraph/sdk');
 
-    // Mock success response
-    // TODO: Replace with real TokenAssociateTransaction using HashPack SDK
+    const signer = hashconnect.getSigner(AccountId.fromString(accountId));
+
+    const transaction = await new TokenAssociateTransaction()
+      .setAccountId(AccountId.fromString(accountId))
+      .setTokenIds(tokenIds.map(id => TokenId.fromString(id)))
+      .freezeWithSigner(signer);
+
+    const response = await transaction.executeWithSigner(signer);
+
     return {
       success: true,
-      transactionId: `0.0.${Math.floor(Math.random() * 1000000)}@${Date.now()}.${Math.floor(Math.random() * 1000)}`,
+      transactionId: response.transactionId.toString(),
     };
   } catch (error: any) {
+    console.error('Token association failed:', error);
     return {
       success: false,
       error: error.message || 'Failed to associate tokens',
@@ -55,35 +42,62 @@ export async function associateTokens(tokenIds: string[]): Promise<TransactionRe
   }
 }
 
-/**
- * Sign and execute a transaction using HashPack
- * @param transaction - Serialized transaction bytes
- * @returns Transaction response
- */
-export async function signTransaction(transaction: Uint8Array): Promise<TransactionResponse> {
+export async function sendPayment(
+  hashconnect: any,
+  accountId: string,
+  treasuryAccountId: string,
+  amount: number,
+  memo: string
+): Promise<TransactionResponse> {
+  if (!hashconnect) {
+    return { success: false, error: 'HashConnect not initialized' };
+  }
+
   try {
-    // Mock implementation
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    const { TransferTransaction, AccountId, Hbar } = await import('@hashgraph/sdk');
+
+    const signer = hashconnect.getSigner(AccountId.fromString(accountId));
+
+    const transaction = await new TransferTransaction()
+      .addHbarTransfer(AccountId.fromString(accountId), new Hbar(-amount))
+      .addHbarTransfer(AccountId.fromString(treasuryAccountId), new Hbar(amount))
+      .setTransactionMemo(memo)
+      .freezeWithSigner(signer);
+
+    const response = await transaction.executeWithSigner(signer);
 
     return {
       success: true,
-      transactionId: `0.0.${Math.floor(Math.random() * 1000000)}@${Date.now()}.${Math.floor(Math.random() * 1000)}`,
+      transactionId: response.transactionId.toString(),
     };
   } catch (error: any) {
+    console.error('Payment failed:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to send payment',
+    };
+  }
+}
+
+export async function signTransaction(
+  hashconnect: any,
+  accountId: string,
+  transactionBytes: Uint8Array
+): Promise<TransactionResponse> {
+  if (!hashconnect) {
+    return { success: false, error: 'HashConnect not initialized' };
+  }
+
+  try {
+    return {
+      success: false,
+      error: 'Direct transaction signing not implemented',
+    };
+  } catch (error: any) {
+    console.error('Transaction signing failed:', error);
     return {
       success: false,
       error: error.message || 'Failed to sign transaction',
     };
   }
-}
-
-/**
- * Get the user's account balance from HashPack
- */
-export async function getAccountBalance(accountId: string): Promise<{ hbar: number; tokens: Record<string, number> }> {
-  // Mock implementation
-  return {
-    hbar: 100,
-    tokens: {},
-  };
 }

@@ -3,7 +3,7 @@ import { Montserrat } from 'next/font/google';
 import './globals.css';
 import { Header } from './_components/header';
 import { Footer } from './_components/footer';
-import { AuthProvider } from './_components/auth-provider';
+import { AuthProviderWrapper } from './_components/auth-provider-wrapper';
 
 const montserrat = Montserrat({ subsets: ['latin'] });
 
@@ -20,13 +20,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={montserrat.className}>
-        <AuthProvider>
+        <AuthProviderWrapper>
           <div className="flex min-h-screen flex-col">
             <Header />
             <main className="flex-1">{children}</main>
             <Footer />
           </div>
-        </AuthProvider>
+        </AuthProviderWrapper>
       </body>
     </html>
   );
