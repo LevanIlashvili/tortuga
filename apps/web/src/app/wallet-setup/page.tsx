@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, CheckCircle2, Circle, Wallet } from 'lucide-react';
 import { useAuth } from '@/app/_components/auth-provider';
+import { associateTokens } from '@/lib/hashpack-helpers';
 
 interface PropertyToken {
   tokenId: string;
@@ -64,21 +65,33 @@ export default function WalletSetupPage() {
     setError(null);
 
     try {
-      // This will be implemented in the next commit with actual HashPack integration
+      const tokenIds = tokensToAssociate.map(t => t.tokenId);
+
+      // Step 1: Call HashPack to sign token association transaction
+      const hashpackResult = await associateTokens(tokenIds);
+
+      if (!hashpackResult.success) {
+        throw new Error(hashpackResult.error || 'Failed to sign token association');
+      }
+
+      // Step 2: Update association status in backend
       const response = await fetch('/api/wallet/associate-tokens', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          tokenIds: tokensToAssociate.map(t => t.tokenId),
+          tokenIds,
+          transactionId: hashpackResult.transactionId,
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to associate tokens');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update token association status');
       }
 
       const data = await response.json();
       if (data.success) {
+        // Refresh token list to show updated association status
         await fetchTokens();
       }
     } catch (err: any) {
