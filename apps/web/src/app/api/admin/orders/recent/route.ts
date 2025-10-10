@@ -20,31 +20,31 @@ export async function GET() {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
-    const [totalProperties, totalOrders, totalUsers, kycPending, orders] = await Promise.all([
-      prisma.property.count(),
-      prisma.order.count(),
-      prisma.user.count(),
-      prisma.kycApplication.count({ where: { status: 'PENDING' } }),
-      prisma.order.findMany({
-        where: { status: 'COMPLETED' },
-        select: { usdcAmount: true },
-      }),
-    ]);
-
-    const totalRevenue = orders.reduce((sum, order) => sum + Number(order.usdcAmount), 0);
+    const orders = await prisma.order.findMany({
+      take: 5,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        property: {
+          select: { name: true },
+        },
+        user: {
+          select: {
+            email: true,
+            wallets: {
+              select: { accountId: true },
+              take: 1,
+            },
+          },
+        },
+      },
+    });
 
     return NextResponse.json({
       success: true,
-      stats: {
-        totalProperties,
-        totalOrders,
-        totalUsers,
-        totalRevenue,
-        kycPending,
-      },
+      orders,
     });
   } catch (error) {
-    console.error('Stats fetch failed:', error);
+    console.error('Recent orders fetch failed:', error);
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

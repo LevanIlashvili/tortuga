@@ -1,71 +1,68 @@
-import { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import { prisma } from '@tortuga/database';
-import { successResponse, withErrorHandling } from '@/lib/api-utils';
-import { requireAdminAuth } from '@/lib/admin-auth';
+import { cookies } from 'next/headers';
 
-export const GET = withErrorHandling(async (request: NextRequest) => {
-  await requireAdminAuth();
+export async function GET(request: Request) {
+  try {
+    const cookieStore = await cookies();
+    const sessionId = cookieStore.get('session')?.value;
 
-  const { searchParams } = new URL(request.url);
-  const page = parseInt(searchParams.get('page') || '1');
-  const limit = parseInt(searchParams.get('limit') || '20');
-  const kycStatus = searchParams.get('kycStatus');
-  const skip = (page - 1) * limit;
+    if (!sessionId) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
 
-  const whereClause: any = {};
+    const session = await prisma.session.findUnique({
+      where: { id: sessionId },
+      include: { user: true },
+    });
 
-  if (kycStatus) {
-    whereClause.kycStatus = kycStatus;
-  }
+    if (!session || session.user.role !== 'ADMIN') {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
 
-  const [users, totalCount] = await Promise.all([
-    prisma.user.findMany({
-      where: whereClause,
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get('search') || '';
+    const kycStatus = searchParams.get('kycStatus') || '';
+
+    const where: any = {};
+
+    if (search) {
+      where.email = {
+        contains: search,
+        mode: 'insensitive',
+      };
+    }
+
+    if (kycStatus) {
+      where.kycApplication = {
+        status: kycStatus,
+      };
+    }
+
+    const users = await prisma.user.findMany({
+      where,
       include: {
-        wallets: true,
-        kycApplication: {
-          select: {
-            id: true,
-            status: true,
-            fullName: true,
-            createdAt: true,
-            updatedAt: true,
-            reviewedAt: true,
-            rejectionNote: true,
-          },
+        kycApplication: true,
+        wallets: {
+          select: { accountId: true },
+          take: 1,
         },
         _count: {
-          select: {
-            orders: true,
-          },
+          select: { orders: true },
         },
       },
-      orderBy: {
-        createdAt: 'desc',
-      },
-      skip,
-      take: limit,
-    }),
-    prisma.user.count({ where: whereClause }),
-  ]);
+      orderBy: { createdAt: 'desc' },
+    });
 
-  return successResponse({
-    users: users.map((user) => ({
-      id: user.id,
-      email: user.email,
-      role: user.role,
-      kycStatus: user.kycStatus,
-      wallets: user.wallets,
-      kycApplication: user.kycApplication,
-      ordersCount: user._count.orders,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    })),
-    pagination: {
-      page,
-      limit,
-      total: totalCount,
-      totalPages: Math.ceil(totalCount / limit),
-    },
-  });
-});
+    return NextResponse.json({
+      success: true,
+      users,
+    });
+  } catch (error) {
+    console.error('Users fetch failed:', error);
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}

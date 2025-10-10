@@ -81,10 +81,28 @@ model User {
   kycApplication KycApplication?
   orders         Order[]
   balances       UserPropertyBalance[]
+  sessions       Session[]
 
   @@index([email])
   @@index([role])
   @@map("users")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Session Details
+  expiresAt DateTime
+
+  // Relations
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
 }
 
 model Wallet {

@@ -27,8 +27,12 @@ export default function AdminLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    checkAuth();
-  }, []);
+    if (pathname !== '/admin/login') {
+      checkAuth();
+    } else {
+      setLoading(false);
+    }
+  }, [pathname]);
 
   const checkAuth = async () => {
     try {
@@ -42,14 +46,14 @@ export default function AdminLayout({
           }
           setUser(data.user);
         } else {
-          router.push('/');
+          router.push('/admin/login');
         }
       } else {
-        router.push('/');
+        router.push('/admin/login');
       }
     } catch (error) {
       console.error('Auth check failed:', error);
-      router.push('/');
+      router.push('/admin/login');
     } finally {
       setLoading(false);
     }
@@ -72,6 +76,10 @@ export default function AdminLayout({
     { name: 'KYC Reviews', href: '/admin/kyc', icon: FileCheck },
     { name: 'Settings', href: '/admin/settings', icon: Settings },
   ];
+
+  if (pathname === '/admin/login') {
+    return children;
+  }
 
   if (loading) {
     return (
