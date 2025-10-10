@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Search, UserCheck, UserX, Clock } from 'lucide-react';
+import { Search, UserCheck, UserX, Clock, Eye } from 'lucide-react';
+import { KycReviewModal } from './_components/kyc-review-modal';
 
 interface User {
   id: string;
@@ -14,6 +15,15 @@ interface User {
   kycApplication: {
     status: string;
     fullName: string;
+    dateOfBirth: string;
+    nationality: string;
+    address: string;
+    city: string;
+    postalCode: string;
+    country: string;
+    idDocumentUrl: string;
+    proofOfAddressUrl: string;
+    selfieUrl: string | null;
   } | null;
   wallets: Array<{
     accountId: string;
@@ -28,6 +38,7 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [kycFilter, setKycFilter] = useState('');
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -132,12 +143,13 @@ export default function UsersPage() {
                     <th className="pb-3">Orders</th>
                     <th className="pb-3">Role</th>
                     <th className="pb-3">Joined</th>
+                    <th className="pb-3">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {users.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="py-8 text-center text-sm text-gray-500">
+                      <td colSpan={8} className="py-8 text-center text-sm text-gray-500">
                         No users found
                       </td>
                     </tr>
@@ -165,6 +177,17 @@ export default function UsersPage() {
                         <td className="py-4 text-sm text-gray-600">
                           {new Date(user.createdAt).toLocaleDateString()}
                         </td>
+                        <td className="py-4">
+                          {user.kycApplication && (
+                            <button
+                              onClick={() => setSelectedUser(user)}
+                              className="flex items-center gap-1 rounded-md bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100"
+                            >
+                              <Eye className="h-3 w-3" />
+                              Review
+                            </button>
+                          )}
+                        </td>
                       </tr>
                     ))
                   )}
@@ -173,6 +196,17 @@ export default function UsersPage() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {selectedUser && (
+        <KycReviewModal
+          user={selectedUser}
+          onClose={() => setSelectedUser(null)}
+          onSuccess={() => {
+            fetchUsers();
+            setSelectedUser(null);
+          }}
+        />
       )}
     </div>
   );
