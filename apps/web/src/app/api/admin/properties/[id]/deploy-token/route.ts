@@ -23,14 +23,6 @@ export const POST = withErrorHandling(async (request: NextRequest, { params }: {
   }
 
   try {
-    await prisma.property.update({
-      where: { id },
-      data: {
-        deploymentStatus: 'DEPLOYING',
-        deploymentError: null,
-      },
-    });
-
     const tokenSymbol = property.name
       .toUpperCase()
       .replace(/[^A-Z0-9]/g, '')
@@ -39,19 +31,18 @@ export const POST = withErrorHandling(async (request: NextRequest, { params }: {
     const tokenResult = await createPropertyToken({
       tokenName: `${property.name} Token`,
       tokenSymbol: tokenSymbol || 'PROP',
-      initialSupply: property.totalTokens,
+      initialSupply: property.tokenSupply,
     });
 
     const updatedProperty = await prisma.property.update({
       where: { id },
       data: {
-        deploymentStatus: 'DEPLOYED',
         hederaToken: {
           create: {
             tokenId: tokenResult.tokenId,
             tokenName: tokenResult.tokenName,
             tokenSymbol: tokenResult.tokenSymbol,
-            totalSupply: property.totalTokens,
+            totalSupply: property.tokenSupply,
             decimals: 0,
             treasuryAccountId: tokenResult.treasuryAccountId,
           },
@@ -67,7 +58,7 @@ export const POST = withErrorHandling(async (request: NextRequest, { params }: {
       tokenId: tokenResult.tokenId,
       tokenName: tokenResult.tokenName,
       tokenSymbol: tokenResult.tokenSymbol,
-      totalSupply: property.totalTokens,
+      totalSupply: property.tokenSupply,
     }, session.userId);
 
     return successResponse({
@@ -75,14 +66,6 @@ export const POST = withErrorHandling(async (request: NextRequest, { params }: {
       message: 'Token deployed successfully',
     });
   } catch (error: any) {
-    await prisma.property.update({
-      where: { id },
-      data: {
-        deploymentStatus: 'FAILED',
-        deploymentError: error.message,
-      },
-    });
-
     throw error;
   }
 });

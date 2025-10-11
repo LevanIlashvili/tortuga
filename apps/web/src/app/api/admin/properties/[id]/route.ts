@@ -9,12 +9,14 @@ const updatePropertySchema = z.object({
   name: z.string().optional(),
   description: z.string().optional(),
   location: z.string().optional(),
-  propertyType: z.string().optional(),
+  imageUrl: z.string().optional(),
   totalValue: z.number().optional(),
+  bondYield: z.number().optional(),
+  maturityDate: z.string().optional(),
+  minimumInvestment: z.number().optional(),
+  tokenSupply: z.number().optional(),
   tokenPrice: z.number().optional(),
-  totalTokens: z.number().optional(),
-  availableTokens: z.number().optional(),
-  expectedApy: z.number().optional(),
+  status: z.enum(['DRAFT', 'ACTIVE', 'CLOSED', 'SOLD_OUT']).optional(),
 });
 
 export const GET = withErrorHandling(async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
@@ -55,11 +57,16 @@ export const PATCH = withErrorHandling(async (request: NextRequest, { params }: 
     return errorResponse('Property not found', 404);
   }
 
+  // Convert maturityDate to Date if present
+  const updateData: any = { ...validated };
+  if (validated.maturityDate) {
+    updateData.maturityDate = new Date(validated.maturityDate);
+  }
+
   const updatedProperty = await prisma.property.update({
     where: { id },
-    data: validated,
+    data: updateData,
     include: {
-      images: true,
       hederaToken: true,
     },
   });
