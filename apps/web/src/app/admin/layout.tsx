@@ -73,8 +73,7 @@ export default function AdminLayout({
     { name: 'Properties', href: '/admin/properties', icon: Building2 },
     { name: 'Orders', href: '/admin/orders', icon: ShoppingCart },
     { name: 'Users', href: '/admin/users', icon: Users },
-    { name: 'KYC Reviews', href: '/admin/kyc', icon: FileCheck },
-    { name: 'Settings', href: '/admin/settings', icon: Settings },
+    { name: 'Compliance', href: '/admin/compliance', icon: FileCheck },
   ];
 
   if (pathname === '/admin/login') {
