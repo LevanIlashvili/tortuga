@@ -26,7 +26,16 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
           select: {
             id: true,
             email: true,
-            kycStatus: true,
+            kycApplication: {
+              select: {
+                status: true,
+              },
+            },
+            wallets: {
+              select: {
+                accountId: true,
+              },
+            },
           },
         },
         property: {
