@@ -21,6 +21,7 @@ out/
 
 # Documentation and reference
 *.md
+!README.md
 reference/
 
 # Debug logs
